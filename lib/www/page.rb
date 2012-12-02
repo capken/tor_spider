@@ -28,8 +28,9 @@ module WWW
     end
 
     def self.from_s3_object(obj)
+      data = Zlib::Inflate.inflate(obj.value)
       build_page(
-        obj.value,
+        data,
         obj.content_type,
         obj.metadata[:encoding],
         obj.metadata[:url],
