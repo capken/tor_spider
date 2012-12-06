@@ -21,15 +21,31 @@ module Refine
           yield null_record
         else
           sections.map(&:inner_html).each do |section|
-            record = {}
-            self.attributes.each do |attribute|
-              value = attribute.match(section)
-              record[attribute.name] = value
-            end
-            yield record
+            yield record_with_attributes(section, body)
           end
         end
+      elsif pattern.is_a? Regexp
+        matches = body.scan pattern
+        if matches.empty?
+          yield null_record
+        else
+          matches.each do |match|
+            yield record_with_attributes(match[1], body)
+          end
+        end
+      else
+        raise "Bad pattern type:#{pattern}"
       end
+    end
+
+    def record_with_attributes(section, body)
+      record = {}
+      self.attributes.each do |attribute|
+        value = attribute.match section, body
+        record[attribute.name] = value
+      end
+
+      return record
     end
   end
 end

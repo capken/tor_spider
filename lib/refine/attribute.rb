@@ -7,22 +7,24 @@ module Refine
 
     attr_accessor :selector
 
-    def initialize(name, pattern, selector)
+    def initialize(name, pattern, selector, opts = {})
       init(name, pattern)
       self.selector = selector
+      @full_doc = opts[:full_doc] || false
     end
 
-    def match(section)
+    def match(section, body)
+      doc = @full_doc ? body : section
+
       if pattern.is_a? String
-        values = Nokogiri::HTML(section).search(pattern)
-        if values.empty?
-          return nil
-        else
-          return values.first.content
-        end
+        values = Nokogiri::HTML(doc).search(pattern)
+        return values.first.content unless values.empty?
       elsif pattern.is_a? Regexp
+        match = doc.match pattern
+        return match[1] if match
       end
-    end
 
+      return nil
+    end
   end
 end

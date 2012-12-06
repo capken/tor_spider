@@ -72,9 +72,9 @@ module Refine
         end
       end
 
-      def attribute(name, pattern, selector)
+      def attribute(name, pattern, selector, opts = {})
         define_method("attribute_#{name}") do
-          Attribute.new name, pattern, selector
+          Attribute.new name, pattern, selector, opts
         end
       end
     end
