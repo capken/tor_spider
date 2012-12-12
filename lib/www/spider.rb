@@ -46,7 +46,7 @@ module WWW
         when /404/
           yield WWW::Page.not_found(url)
         else
-          yield WWW::Page.error_page(url, code)
+          yield WWW::Page.error_page(url, res.code)
           warn "#{res.code}:#{res.error}:#{url}"
         end
       else
