@@ -46,9 +46,20 @@ module Refine
           selector.match(body) do |record|
             record[:_source] = url.to_s
             record[:_date] = Time.now.to_s
+            add_tags record
+
             yield record
           end
         end
+      end
+    end
+
+    def add_tags(record)
+      methods.grep(/^tag_/).each do |method|
+        key = method.to_s.gsub /^tag_/, ""
+        value = self.send method
+
+        record[key] = value
       end
     end
 
@@ -75,6 +86,12 @@ module Refine
       def attribute(name, pattern, selector, opts = {})
         define_method("attribute_#{name}") do
           Attribute.new name, pattern, selector, opts
+        end
+      end
+
+      def tag(key, value)
+        define_method("tag_#{key}") do
+          value
         end
       end
     end

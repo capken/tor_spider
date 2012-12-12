@@ -42,7 +42,7 @@ module Refine
       record = {}
       self.attributes.each do |attribute|
         value = attribute.match section, body
-        record[attribute.name] = value
+        record[attribute.name] = value.to_s.strip
       end
 
       return record
