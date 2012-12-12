@@ -30,7 +30,7 @@ module Refine
           yield null_record
         else
           matches.each do |match|
-            yield record_with_attributes(match[1], body)
+            yield record_with_attributes(match[0], body)
           end
         end
       else

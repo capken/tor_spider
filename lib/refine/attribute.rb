@@ -15,6 +15,7 @@ module Refine
 
     def match(section, body)
       doc = @full_doc ? body : section
+      doc = doc.force_encoding("utf-8")
 
       if pattern.is_a? String
         values = Nokogiri::HTML(doc).search(pattern)
