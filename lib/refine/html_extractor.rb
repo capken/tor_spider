@@ -1,24 +1,31 @@
 # -*- coding: UTF-8 -*-
 
 module Refine
-  class HTMLExtractor
+  class HTMLExtractor < Base
 
-    attr_accessor :page_paths
+    class << self
+      protected
 
-    def initialize
-      self.page_paths = {}
-
-      methods = self.class.instance_methods
-
-      methods.grep(/^page_path_/).each do |method|
-        page_path = self.send method
-        self.page_paths[page_path.name] = page_path
+      def selector(name, pattern, page_path, opts = {})
+        define_method("selector_#{name}") do
+          Selector.new name, pattern, page_path, opts
+        end
       end
 
+      def attribute(name, pattern, selector, opts = {})
+        define_method("attribute_#{name}") do
+          Attribute.new name, pattern, selector, opts
+        end
+      end
+    end
+
+    def initialize
+      super
+
       selectors = {}
-      methods.grep(/^selector_/).each do |method|
+      self.methods.grep(/^selector_/).each do |method|
         selector = self.send method
-        page_path = self.page_paths[selector.page_path]
+        page_path = @page_paths[selector.page_path]
         if page_path.nil?
           raise "Page path #{selector.page_path} is not defined for selector #{selector.name}"
         else
@@ -27,7 +34,7 @@ module Refine
         end
       end
 
-      methods.grep(/^attribute_/).each do |method|
+      self.methods.grep(/^attribute_/).each do |method|
         attribute = self.send method
         selector = selectors[attribute.selector]
         if selector.nil?
@@ -44,54 +51,9 @@ module Refine
       self.page_paths.values.each do |page_path|
         page_path.match(url) do |selector|
           selector.match(body) do |record|
-            record[:_source] = url.to_s
-            record[:_date] = Time.now.to_s
-            add_tags record
-
+            base_append(record, url)
             yield record
           end
-        end
-      end
-    end
-
-    def add_tags(record)
-      methods.grep(/^tag_/).each do |method|
-        key = method.to_s.gsub /^tag_/, ""
-        value = self.send method
-
-        record[key] = value
-      end
-    end
-
-    class << self
-
-      protected
-
-      def domain(value)
-        define_method(:domain) { return value }
-      end
-
-      def page_path(name, pattern)
-        define_method("page_path_#{name}") do
-          PagePath.new name, pattern
-        end
-      end
-
-      def selector(name, pattern, page_path)
-        define_method("selector_#{name}") do
-          Selector.new name, pattern, page_path
-        end
-      end
-
-      def attribute(name, pattern, selector, opts = {})
-        define_method("attribute_#{name}") do
-          Attribute.new name, pattern, selector, opts
-        end
-      end
-
-      def tag(key, value)
-        define_method("tag_#{key}") do
-          value
         end
       end
     end

@@ -7,10 +7,11 @@ module Refine
     attr_accessor :page_path
     attr_accessor :attributes
 
-    def initialize(name, pattern, page_path)
+    def initialize(name, pattern, page_path, opts)
       init(name, pattern)
       self.page_path = page_path
       self.attributes = []
+      @opts = opts
     end
 
     def match(body)
@@ -20,7 +21,8 @@ module Refine
         if sections.empty?
           yield null_record
         else
-          sections.map(&:inner_html).each do |section|
+          method = @opts[:node] ? :to_s : :inner_html
+          sections.map(&method).each do |section|
             yield record_with_attributes(section, body)
           end
         end
