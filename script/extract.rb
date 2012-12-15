@@ -6,8 +6,10 @@ require File.expand_path(File.dirname(__FILE__)) + "/../config/load"
 reporter = Log::HadoopReporter.new :job_name => "Spider"
 spider = WWW::Spider.crawl_only("capken")
 
-extractor = Rule::AjisenExtractor.new
-warn extractor.page_paths.inspect
+rule_name = ARGV[0]
+
+extractor_class = Rule.const_get "#{rule_name.capitalize}Extractor"
+extractor = extractor_class.new
 
 STDIN.each do |line|
   begin
