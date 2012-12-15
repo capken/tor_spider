@@ -27,6 +27,10 @@ module WWW
         when 200
           content_type, charset = curl.content_type.scan(
               /([^\s]+);\s*charset=([^\s]+)/).first
+
+          content_type = content_type || "text/html"
+          charset = charset || "utf-8"
+
           Response.new(
             :code => 200,
             :body_str => curl.body_str,
