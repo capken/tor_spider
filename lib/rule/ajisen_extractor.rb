@@ -3,7 +3,7 @@
 module Rule
   class AjisenExtractor < Refine::HTMLExtractor
 
-    domain "http://www.ajisen.com.cn"
+    domain "www.ajisen.com.cn"
 
     page_path :list_page, /restaurant03\.php\?cid=\d+$/i
 

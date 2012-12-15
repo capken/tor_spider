@@ -2,7 +2,7 @@
 
 module Rule
   class PizzahutExtractor < Refine::HTMLExtractor
-    domain "http://www.pizzahut.com.cn/"
+    domain "www.pizzahut.com.cn"
 
     page_path :list_pages, /GetHappyStore\.aspx\?cityid=\d+/i
 
