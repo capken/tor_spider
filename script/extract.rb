@@ -20,7 +20,7 @@ STDIN.each do |line|
         page.send method
       end
 
-      puts res.join("\t")
+      warn res.join("\t")
 
       extractor.extract(url, page.body) do |record|
         puts record.to_json
