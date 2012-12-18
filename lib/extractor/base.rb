@@ -13,10 +13,18 @@ module Extractor
     end
 
     def thrift_of(o)
-      res = {}
+      res = {
+        :payload => {},
+        :payloadRaw => {},
+        :meta => {}
+      }
 
-      res[:payloadRaw] = o
-      res[:payload] = {}
+      res[:meta][:source] = o["_source"]
+      res[:meta][:date] = o["_date"]
+
+      o.each do |key, value|
+        res[:payloadRaw][key] = value unless key =~ /^_(?:date|source)$/
+      end
 
       return res
     end
