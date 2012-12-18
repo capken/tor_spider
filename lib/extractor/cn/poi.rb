@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
 
 module Extractor
-  module China
-    class POI < Extractor::Base
-      include Tel
+  module Cn
+    class POI < Base
+      include Type::Tel
 
       order :tel
     end
