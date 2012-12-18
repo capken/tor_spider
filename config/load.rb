@@ -12,7 +12,7 @@ require "zlib"
 
 CODE_ROOT = File.expand_path(File.dirname(__FILE__)) + '/../' unless defined? CODE_ROOT
 
-%w[tor www s3 log utility refine rule].each do |dir|
+%w[tor www s3 log utility refine rule extractor].each do |dir|
   Dir.glob(CODE_ROOT + "lib/#{dir}/*.rb").each do |libname|
     warn "loading ==> #{libname}"
     require libname
