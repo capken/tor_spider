@@ -8,6 +8,9 @@ module Extractor
           raw = o[:payloadRaw]
 
           tel = raw["tel"]
+
+          tel = tel.gsub /[^0-9-]/, ""
+
           o[:payload][:tel] = tel
         end
       end

@@ -19,12 +19,10 @@ module Extractor
         :meta => {}
       }
 
-      res[:meta][:source] = o["_source"]
-      res[:meta][:date] = o["_date"]
+      res[:meta][:source] = o.delete "_source"
+      res[:meta][:date] = o.delete "_date"
 
-      o.each do |key, value|
-        res[:payloadRaw][key] = value unless key =~ /^_(?:date|source)$/
-      end
+      o.each { |k, v| res[:payloadRaw][k] = v }
 
       return res
     end
@@ -36,6 +34,21 @@ module Extractor
       def order(*params)
         define_method(:attributes) { return params }
       end
+    end
+
+    private
+
+    def match(str, pattern)
+      return nil if pattern.nil?
+
+      if pattern =~ /\[\[(.+?)\]\]/
+        list = $1
+      else
+        return nil
+      end
+    end
+
+    def within(str, list)
     end
   end
 end
