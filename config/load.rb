@@ -8,6 +8,7 @@ require "public_suffix"
 require "digest/md5"
 require "nokogiri"
 require "json"
+require "ostruct"
 require "zlib"
 
 CODE_ROOT = File.expand_path(File.dirname(__FILE__)) + '/../' unless defined? CODE_ROOT

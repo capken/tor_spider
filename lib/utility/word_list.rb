@@ -50,6 +50,7 @@ module Utility
 
     def initialize(list_file, opts = {})
       @debug = opts[:debug]
+      @type = opts[:type] || :other
 
       @count = 0
       @start = create_new_state
@@ -118,6 +119,7 @@ module Utility
 
     def within(str)
       current, next_state = @start, nil
+      res = []
 
       str.chars.to_a.each_with_index do |char, index|
         warn "#{index} => #{char}" if @debug
@@ -130,10 +132,22 @@ module Utility
         if next_state
           current = next_state
           current.words.each do |word|
-            yield [index - word.length + 1, index, word]
+            entity = OpenStruct.new(
+              :begin => index - word.length + 1,
+              :end => index,
+              :value => word,
+              :type => @type
+            )
+            if block_given?
+              yield entity
+            else
+              res << entity
+            end
           end
         end
       end
+
+      return res
     end
   end
 end
