@@ -26,6 +26,7 @@ module Refine
       record[:_source] = url.to_s
       record[:_date] = Time.now.to_s
       add_tags record
+      post_extractor record
     end
 
     protected

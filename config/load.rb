@@ -10,6 +10,7 @@ require "nokogiri"
 require "json"
 require "ostruct"
 require "zlib"
+require "cgi"
 
 CODE_ROOT = File.expand_path(File.dirname(__FILE__)) + '/../' unless defined? CODE_ROOT
 

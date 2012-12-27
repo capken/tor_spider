@@ -9,7 +9,7 @@ ruby -ruri -ne "records = \$_.scan /<tr><td>(.+?)<\/td><\/tr>/
     arr = s[0].split '</td><td>'
     r,l,u = arr[1], arr[2], arr[5]
     if u =~ /<a href=\"(.+?)\">/i
-      puts \$1 + \"?region=\" + URI.encode(r) + \"&locality=\" + URI.encode(l)
+      puts URI.encode(\$1) + \"?region=\" + URI.encode(r) + \"&locality=\" + URI.encode(l)
     end
   end" |
 xargs -I PATH echo "http://www.starbucks.com.cn/store/PATH"
