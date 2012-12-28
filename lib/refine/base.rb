@@ -22,11 +22,19 @@ module Refine
       end
     end
 
+    def default_cleaner(record)
+      record.each do |key, value|
+        value = value.gsub /&amp;/, ","
+        record[key] = value
+      end
+    end
+
     def base_append(record, url)
       record[:_source] = url.to_s
       record[:_date] = Time.now.to_s
       add_tags record
       post_extractor record
+      default_cleaner record
     end
 
     protected
