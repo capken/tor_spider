@@ -81,7 +81,7 @@ class AddressParser
     include State
 
     def self.revise(cur, pre)
-      if cur[:type] != :county && cur[:value] =~ /^([省市区]|新区)(.+)$/
+      if cur[:value] =~ /^([省市区])(.+)$/ && pre[:value].last != $1
         pre[:value] = pre[:value] + $1
         cur[:value] = $2
       end
@@ -124,11 +124,15 @@ class AddressParser
 
     def self.revise(cur, pre)
       cv, pv = cur[:value], pre[:value]
-      if cv =~ /^([0-9一二三四五六七八东西南北中][路段])(.+$)/ && pre[:type] == :street
+      if cv =~ /^([0-9一二三四五六七八东西南北中]+[路段])(.+$)/ && pre[:type] == :street
         pre[:value] = pv + $1
         cur[:value] = $2
       elsif cv.first =~ /^道(.+)/ && pv.last =~ /街/
         pre[:value] = pv + "道"
+        cur[:value] = $1
+      elsif cv =~ /^交汇处(.+)/ && pre[:type] == :street
+        cur[:value] = $1
+      elsif cv =~ /^与(.+)/ && cur[:type] == :street && pre[:type] == :street
         cur[:value] = $1
       end
     end
@@ -155,11 +159,11 @@ class AddressParser
     include State
 
     def self.match(value)
-      value =~ /^[0-9一二三四五六七八九十甲乙丙丁,-]+[弄号#]$/
+      value =~ /^.{,3}[0-9一二三四五六七八九十甲乙丙丁,-]+[弄号#]$/
     end
 
     def self.revise(cur, pre)
-      if cur[:value] =~ /^([院楼])(.+$)/ && pre[:type] == :street_number
+      if cur[:value] =~ /^([院楼])(.+)$/ && pre[:type] == :street_number
         pre[:value] = pre[:value] + $1
         cur[:value] = $2
       end
@@ -177,8 +181,17 @@ class AddressParser
   class Landmark
     include State
 
+    POSTFIX = "(?:电子城|市场|百货|花园|书城|广场|大楼|大厦|机场|商城|商业街|商业水城|酒吧街|中心|影城|国际商区|大酒店|大学)"
+
+    def self.revise(cur, pre)
+      if pre[:value] =~ /^#{POSTFIX}$/ && pre[:type] == :landmark
+        cur[:value] = pre[:value] + cur[:value]
+        pre[:value] = ""
+      end
+    end
+
     def self.match(value)
-      value =~ /^[\u4e00-\u9fa5]{2,9}(?:电子城|市场|百货|花园|书城|广场|大楼|大厦|机场|商城|商业街|商业水城|酒吧街|中心|影城|国际商区|大酒店|大学)$/
+      value =~ /^[\u4e00-\u9fa5]{2,9}#{POSTFIX}$/
     end
 
     def go_to(word)
@@ -212,11 +225,28 @@ class AddressParser
     @states[:landmark] = Landmark.new self
   end
 
+  def double_byte_2_single_byte(str)
+    res = ""
+    str.each_char do |char|
+      code_num = char.codepoints.first
+      if code_num >= 65281 and code_num <= 65374
+        code_num = code_num - 65248
+      elsif code_num == 12288
+        code_num = 32
+      end
+      res << code_num.chr('UTF-8')
+    end
+    return res
+  end
+
   def parse(str)
     @state, @result = @states[:start], []
 
-    str = str.gsub /－/, '-'
+    str = double_byte_2_single_byte str
+
     str = str.gsub /、/, ','
+    str = str.gsub /\(.+?\)/, ''
+    str = str.gsub /\([^\)]+$/, ''
     str = str.gsub /邮编.+$/, ''
 
     word = ""
@@ -232,7 +262,19 @@ class AddressParser
 
     @result << { :value => word, :type => :other } if word.size > 0
 
-    return post_parsing
+    return post_parsing.format
+  end
+
+  def format
+    obj = {}
+    [:province, :city, :county, :area, :street,
+      :street_number, :landmark, :other].each do |att|
+      @result.each do |cur|
+        obj[att] = cur[:value] if cur[:type] == att
+      end
+    end
+
+    return obj.to_json
   end
 
   def post_parsing
@@ -245,9 +287,20 @@ class AddressParser
       County.revise cur, pre
       Street.revise cur, pre
       StreetNumber.revise cur, pre
+      Landmark.revise cur, pre
+    end.each_with_index do |cur, index|
+      pre = @result[index - 1]
+      next if pre.nil?
+
+      if cur[:type] == :street && pre[:type] == :street
+        cur[:value] = pre[:value] + cur[:value]
+        pre[:value] = ""
+      end
     end.reject do |cur|
       cur[:value].empty?
     end
+
+    return self
   end
 
   def list_match(word, *lists)
