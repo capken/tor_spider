@@ -13,7 +13,10 @@ module Extractor
           address = address.gsub /\([^\)]+$/, ''
           address = address.gsub /邮编.+$/, ''
 
-          o[:payload][:tel] = address
+          res = Utility::AddressParser.instance.parse address
+          res.each do |key, value|
+            o[:payload][key] = value
+          end
         end
       end
     end

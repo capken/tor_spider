@@ -11,6 +11,7 @@ require "json"
 require "ostruct"
 require "zlib"
 require "cgi"
+require "singleton"
 
 CODE_ROOT = File.expand_path(File.dirname(__FILE__)) + '/../' unless defined? CODE_ROOT
 

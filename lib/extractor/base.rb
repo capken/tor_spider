@@ -27,26 +27,26 @@ module Extractor
       return res
     end
 
-    class << self
+    # convert double byte characters to single byte characters
+    def db2sb(str)
+      res = ""
 
-      # convert double byte characters to single byte characters
-      def db2sb(str)
-        res = ""
+      str.each_char do |char|
+        code_num = char.codepoints.first
 
-        str.each_char do |char|
-          code_num = char.codepoints.first
-
-          if 65281 <= code_num and code_num <= 65374
-            code_num = code_num - 65248
-          elsif code_num == 12288
-            code_num = 32
-          end
-
-          res << code_num.chr('utf-8')
+        if 65281 <= code_num and code_num <= 65374
+          code_num = code_num - 65248
+        elsif code_num == 12288
+          code_num = 32
         end
 
-        return res
+        res << code_num.chr('utf-8')
       end
+
+      return res
+    end
+
+    class << self
 
       protected
 

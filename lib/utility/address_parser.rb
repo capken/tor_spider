@@ -2,7 +2,10 @@
 
 module Utility
   class AddressParser
-  
+    attr_reader :result
+
+    include Singleton
+
     def initialize
       setup_words_list
       setup_state_machine
@@ -11,7 +14,7 @@ module Utility
     def setup_words_list
       @word_lists = {}
       [:province, :city, :county].each do |list_name|
-        @word_lists[:list_name] = Utility::WordList.new(
+        @word_lists[list_name] = Utility::WordList.new(
           File.join(CODE_ROOT, "lib/extractor/cn/type/#{list_name}.txt"),
           :type => list_name
         )
@@ -22,7 +25,7 @@ module Utility
       @states = {}
       [Start, Province, City, County, Area,
         Street, StreetNumber, Landmark].each do |state|
-        @states[state.to_s.downcase.to_sym] = state.new(self)
+        @states[state.to_s.downcase.split('::').last.to_sym] = state.new(self)
       end
     end
   
@@ -34,7 +37,7 @@ module Utility
         return true
       end
     end
-  
+
     def reset_state_machine
       @state, @result = @states[:start], []
     end
@@ -58,7 +61,7 @@ module Utility
     end
   
     def post_parsing
-      [Privince, City, County, Street,
+      [Province, City, County, Street,
         StreetNumber, Landmark].each do |state|
         each_entity_pair do |cur, pre|
           state.revise cur, pre
@@ -72,7 +75,7 @@ module Utility
         end
       end
   
-      @results.reject { |entity| entity[:value].empty? }
+      @result.reject { |entity| entity[:value].empty? }
   
       return self
     end
@@ -86,7 +89,7 @@ module Utility
         end
       end
   
-      return obj.to_json
+      return obj
     end
   
     def parse(str)
