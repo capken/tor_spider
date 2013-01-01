@@ -5,6 +5,16 @@ require 'haml'
 require 'json'
 require 'curb'
 require 'uri'
+require "bson"
+require 'mongo'
+
+include Mongo
+
+@client = MongoClient.new('localhost', 27017)
+@db     = @client['geo_db']
+@coll   = @db['starbucks']
+
+set :starbucks, @coll
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Firefox/17.0"
 MAP_API_KEY = "AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY"
@@ -12,12 +22,43 @@ GEO_URL = "http://maps.googleapis.com/maps/api/geocode/json"
 PLACE_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 get '/' do
-  s = '{"payload":{"name":"星巴克-嘉里中心咖啡店","tel":"010-85296169","province":"北京市","city":"朝阳区","street":"光华路","streetnumber":"1号","landmark":"嘉里中心","other":"首层01单元"},"payloadRaw":{"name":"嘉里中心咖啡店","address":"北京市朝阳区光华路1号嘉里中心首层01单元","tel":"010-85296169","brand_name":"星巴克"},"meta":{"source":"http://www.starbucks.com.cn/store/kerrycenter.html?region=%E5%8C%97%E4%BA%AC%E5%B8%82&locality=%E6%9C%9D%E9%98%B3%E5%8C%BA","date":"2012-12-28 14:49:33 +0800"}}'
-  obj = JSON[s]
-  @payload = obj['payload']
-  @payloadRaw = obj['payloadRaw']
-  @meta = obj['meta']
-  haml :index
+  obj = settings.starbucks.find_one({"resolve" => "no"})
+  if obj
+    record = JSON[obj["record"]]
+    @id = obj["_id"].to_s
+    @payload, @payloadRaw, @meta = record['payload'], record['payloadRaw'], record['meta']
+    haml :index
+  else
+    "No Record for GEO Resolve"
+  end
+end
+
+get '/dump' do
+  res = []
+  settings.starbucks.find.each do |doc|
+    res << doc["record"]
+  end
+
+  content_type :json
+  return res.join "\n"
+end
+
+get '/update' do
+  id = params["id"]
+  location = params["location"]
+  lat, lng = location.split ","
+
+  obj = settings.starbucks.find_one({"_id" => BSON::ObjectId(id) })
+  if obj
+    record = JSON[obj["record"]]
+    record["payloadRaw"]["lat"] = lat
+    record["payloadRaw"]["lng"] = lng
+    obj["record"] = record.to_json
+    obj["resolve"] = "yes"
+    settings.starbucks.update({"_id" => BSON::ObjectId(id)}, obj)
+  end
+
+  redirect "/"
 end
 
 get '/geo.json' do
@@ -33,6 +74,7 @@ get '/geo.json' do
   end
 
   curl.url = "#{GEO_URL}?address=#{URI.encode(address)}&sensor=true"
+  warn curl.url
   curl.perform
 
   response = {}
