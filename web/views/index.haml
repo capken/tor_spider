@@ -1,6 +1,6 @@
 %html
   %head
-    %title GEO APP
+    %title Geo APP
     %link{ :rel=>"stylesheet", :href=>"/bootstrap/css/bootstrap.min.css", :type => "text/css" }
     %style{:type=>"text/css"}
       :plain
@@ -8,32 +8,17 @@
     %script{ :type=>"text/javascript", :src=>"https://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=true"}
     %script{ :type=>"text/javascript", :src=>"http://code.jquery.com/jquery-latest.js"}
     %script{ :type=>"text/javascript", :src=>"/bootstrap/js/bootstrap.min.js"}
-    %script{:type=>"text/javascript"}
-      :plain
-        var map;
-        function initialize() {
-          var mapOptions = {
-            center: new google.maps.LatLng(31.230393, 121.473704),
-            zoom: 8,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-          };
-
-          map = new google.maps.Map(
-            document.getElementById("map_canvas"),
-            mapOptions);
-        }
-  %body{:onload => "initialize()"}
+  %body
     %div.row
       %div.span6.offset1
-        %legend Raw
+        %legend Remaining Records
+        %h4 #{@total} records
+        %legend Raw Record
         %dl.dl-horizontal
           - @payloadRaw.each do |key, value|
             %dt #{key}
             %dd #{value}
-          %br
-          %button.btn#next-button next
-          %button.btn#next-button skip
-        %legend Record
+        %legend Refined Record
         %form.form-horizontal
           - ["name", "province", "city", "county", "area", "street", "streetnumber", "landmark", "other"].each do |att|
             - if value = @payload[att]
@@ -44,27 +29,44 @@
                   %label.checkbox
                     %input{:type => "checkbox", :value => value, :checked => (att !~ /(?:name|area|landmark|other)/)} #{value}
         %input#record-id{:type => "hidden", :value => @id}
-        %input#lat{:type => "hidden"}
-        %input#lng{:type => "hidden"}
+        %input#brand-name{:type => "hidden", :value => @payloadRaw['brand_name']}
+        %input#geo-lat{:type => "hidden"}
+        %input#geo-lng{:type => "hidden"}
       %div.span8
         %legend Map
         %div#map_canvas
       %div.span6
-        %legend GEO Address
-        %input.input-block-level#geo-location{:type => "text"}
-        %br
-        %button.btn#geo-button geo
-        %button.btn.btn-primary#revise-button revise
-        %legend GEO Resolve
-        %div#resolve-results
-        %div#revise-results
+        %legend Geo Address
+        %div.well.well-small
+          %div.input-append
+            %input.input-block-level#geo-location{:type => "text"}
+          %button.btn#geo-button{:type => "button"} geo
+        %div.well.well-small
+          %div.input-append
+            %input.input-block-level#geo-name{:type => "text"}
+          %button.btn#revise-button{:type => "button"} nearby
+        %legend Geo Results
+        %div.well.well-small
+          %div#geo-result
+          %div#revise-results
+        %div.well.well-small
+          %div.controls
+            %label.radio
+              %input{:type => "radio", :name => "record-address", :value => "input"}
+                %b Use Input Address
+            %label.radio
+              %input{:type => "radio", :name => "record-address", :value => "resolve"}
+                %b Use Resolve Address
+        %button.btn.btn-primary#reset-button reset
         %button.btn.btn-primary#confirm-button confirm
     %script{:type=>"text/javascript"}
       :plain
+        var map;
+
         function geo_location() {
           var geo_value = "";
 
-          $('input[type=checkbox]').each(function(n,e){
+          $('form.form-horizontal input[type=checkbox]').each(function(n,e){
             var element = $(e);
             if(element.attr("checked") == "checked") {
               geo_value += element.val();
@@ -76,13 +78,13 @@
           return geo_value;
         }
 
-        $('input[type=checkbox]').each(function(n,e){
+        $('form.form-horizontal input[type=checkbox]').each(function(n,e){
           $(e).change(function() {
             geo_location();
           });
         });
 
-        $("#geo-button").click(function(){
+        function init_map() {
           var address = $("#geo-location").val();
 
           $.getJSON("geo.json",
@@ -90,52 +92,68 @@
 
             var lat = json["lat"];
             var lng = json["lng"];
-            var f_add = json["formatted_address"];
+            var formatted_address = json["formatted_address"];
 
             if(lat == undefined || lng == undefined) {
-              $("#resolve-results").html("<p class='text-warning'>The address could not be resolve</p>");
+              $("#geo-result").html("<p class='text-warning'>The address could not be resolve</p>");
               return;
             }
 
+            $("#geo-lat").val(lat);
+            $("#geo-lng").val(lng);
+
             var location = new google.maps.LatLng(lat, lng);
-
             var html = "<label class='radio'>" +
-              "<input type='radio' name='location' value='" + lat + "," + lng + "'>" + f_add + "</label>";
-            $("#resolve-results").html(html);
-
-            $("#lat").val(lat);
-            $("#lng").val(lng);
+              "<input id='geo-position' type='radio' name='location' value='" + lat + "," + lng + "'>" + formatted_address + "</label>";
+            $("#geo-result").html(html);
 
             var options = {
-              zoom: 15,
+              zoom: 17,
               center: location,
               mapTypeId: google.maps.MapTypeId.ROADMAP
             }
 
-            map.setOptions(options);
+            map = new google.maps.Map(
+              document.getElementById("map_canvas"),
+              options
+            );
 
             var marker = new google.maps.Marker({
               position: location,
               map: map,
+              draggable:true,
               animation: google.maps.Animation.DROP,
-              title:"星巴克, " + f_add
+              title:formatted_address
+            });
+
+            google.maps.event.addListener(marker, 'dragend', function() {
+              var p = marker.getPosition();
+              $("#geo-lat").val(p.lat());
+              $("#geo-lng").val(p.lng());
+              $("#geo-position").val(p.lat() + "," + p.lng());
             });
           });
+        }
+
+        $("#geo-button").click(function(){
+          init_map();
         });
 
         $("#revise-button").click(function(){
-          var lat = $("#lat").val();
-          var lng = $("#lng").val();
+          var lat = $("#geo-lat").val();
+          var lng = $("#geo-lng").val();
+          var geo_name = $("#geo-name").val();
+
           if(lat == "" || lng =="") {
             alert("Location lat/lng is empty!");
           } else {
             $.getJSON("revise.json",
-              {lat:lat, lng:lng}, function(json){
+              {lat:lat, lng:lng, geo_name:geo_name}, function(json){
               data = json["records"];
               var html = "";
               $.each(data, function(i, item){
                 html += "<label class='radio'>" +
-                  "<input type='radio' name='location' value='" + item.lat + "," + item.lng + "'>" + (i+1) + ". " + item.name + "," + item.vicinity +
+                  "<input type='radio' name='location' value='" + item.lat + "," + item.lng + "'>" + (i+1) + ". " + item.vicinity +
                   "</label>";
 
                 var location = new google.maps.LatLng(item.lat, item.lng);
@@ -152,18 +170,50 @@
           }
         });
 
+
+        $("#reset-button").click(function(){
+          $("input[type=radio]").each(function(){
+            this.checked = false;
+          });
+          $("#geo-name").val($("#brand-name").val());
+        });
+
+
         $("#confirm-button").click(function(){
           var location;
+          var address;
+          var url = "update?id=" + $("#record-id").val()
 
           $('input[name=location]').each(function(n,e){
-            var element = $(e);
-            if(element.attr("checked") == "checked") {
-              location = element.val();
+            var obj = $(e);
+            if(obj.attr("checked") == "checked") {
+              location = obj.val();
+              address = obj.parent().text();
             }
           });
 
-          window.location.href = "update?id=" + $("#record-id").val() + "&location=" + location;
+          if(location == undefined || address == undefined) {
+            alert("You need to select one location!");
+            return;
+          } else {
+            url = url + "&location=" + location;
+          }
+
+          $("input[name='record-address']").each(function(n,e){
+            var obj = $(e);
+            if(obj.attr("checked") == "checked") {
+              if(obj.val() == "input") {
+                url = url + "&resolve_address=" + encodeURI($("#geo-location").val());
+              } else if(obj.val() == "resolve") {
+                address= address.replace(/\d+\.\s*/, "");
+                url = url + "&resolve_address=" + encodeURI(address);
+              }
+            }
+          });
+
+          window.location.href = url;
         });
 
         geo_location();
-
+        init_map();
+        $("#geo-name").val($("#brand-name").val());

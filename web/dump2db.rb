@@ -11,6 +11,8 @@ coll_name = ARGV[0]
 @db     = @client['geo_db']
 @coll   = @db[coll_name]
 
+@coll.remove
+
 STDIN.each do |line|
   line = line.strip
   record = { :record => line, :resolve => "no" }

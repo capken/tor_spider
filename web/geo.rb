@@ -23,6 +23,7 @@ PLACE_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 get '/' do
   obj = settings.starbucks.find_one({"resolve" => "no"})
+  @total = settings.starbucks.find({"resolve" => "no"}).count
   if obj
     record = JSON[obj["record"]]
     @id = obj["_id"].to_s
@@ -36,7 +37,19 @@ end
 get '/dump' do
   res = []
   settings.starbucks.find.each do |doc|
-    res << doc["record"]
+    record = {}
+
+    raw = JSON[doc["record"]]["payloadRaw"]
+    raw.each do |k, v|
+      record[k] = v
+    end
+
+    meta = JSON[doc["record"]]["meta"]
+    meta.each do |k, v|
+      record[k] = v
+    end
+
+    res << record
   end
 
   content_type :json
@@ -48,11 +61,15 @@ get '/update' do
   location = params["location"]
   lat, lng = location.split ","
 
+  address = params["resolve_address"];
+
   obj = settings.starbucks.find_one({"_id" => BSON::ObjectId(id) })
   if obj
     record = JSON[obj["record"]]
     record["payloadRaw"]["lat"] = lat
     record["payloadRaw"]["lng"] = lng
+    record["payloadRaw"]["map_address"] = address if address && !address.empty?
+
     obj["record"] = record.to_json
     obj["resolve"] = "yes"
     settings.starbucks.update({"_id" => BSON::ObjectId(id)}, obj)
@@ -99,6 +116,7 @@ end
 
 get '/revise.json' do
   lat, lng = params["lat"], params["lng"]
+  geo_name = params["geo_name"]
 
   curl = Curl::Easy.new do |c|
     c.follow_location = true
@@ -112,12 +130,13 @@ get '/revise.json' do
   opts = {
     :location => "#{lat},#{lng}",
     :radius => "500",
-    :name => URI.encode('星巴克'),
+    :name => URI.encode(geo_name),
     :sensor => false,
     :key => MAP_API_KEY
   }
 
   curl.url = "#{PLACE_URL}?#{opts.map {|k,v| "#{k}=#{v}" }.join("&")}"
+  warn curl.url
   curl.perform
 
   response = { :records => [] }
