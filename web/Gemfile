@@ -1,8 +1,0 @@
-source 'http://ruby.taobao.org'
-
-gem "sinatra"
-gem "haml"
-gem "shotgun"
-gem "curb"
-gem "bson_ext"
-gem "mongo"
