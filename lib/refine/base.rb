@@ -33,7 +33,7 @@ module Refine
       record[:_source] = url.to_s
       record[:_date] = Time.now.to_s
       add_tags record
-      post_extractor record
+      post_extractor record if self.respond_to? :post_extractor
       default_cleaner record
     end
 
