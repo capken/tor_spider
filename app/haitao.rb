@@ -6,8 +6,14 @@ require File.expand_path(File.dirname(__FILE__)) + "/../config/load"
 reporter = Log::HadoopReporter.new :job_name => "Spider"
 spider = WWW::Spider.crawl_only("capken")
 
-extractor = Rule::SmzdmExtractor.new
-#warn extractor.page_paths.inspect
+extractors = {}
+[ 
+  Rule::Haitao.new, 
+  Rule::Mgpyh.new,
+  Rule::Taozhe.new
+].each do |ext|
+  extractors[ext.domain] = ext
+end
 
 STDIN.each do |line|
   begin
@@ -19,7 +25,7 @@ STDIN.each do |line|
       end
       warn res.join("\t")
 
-      extractor.extract(url, page.body) do |record|
+      extractors[url.domain].extract(url, page.body) do |record|
         puts record.to_json
       end
 
