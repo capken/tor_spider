@@ -25,6 +25,7 @@ module Refine
     def default_cleaner(record)
       record.each do |key, value|
         value = value.gsub /&amp;/, ","
+        value = value.gsub /&nbsp;/, " "
         record[key] = value
       end
     end
@@ -32,9 +33,9 @@ module Refine
     def base_append(record, url)
       record[:_source] = url.to_s
       record[:_date] = Time.now.to_s
-      add_tags record
-      post_extractor record if self.respond_to? :post_extractor
       default_cleaner record
+      post_extractor record if self.respond_to? :post_extractor
+      add_tags record
     end
 
     protected
