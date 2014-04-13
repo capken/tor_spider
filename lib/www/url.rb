@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 module WWW
-  class Url
+  class URL
 
     attr_reader :domain, :md5
 

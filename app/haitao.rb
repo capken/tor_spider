@@ -8,6 +8,7 @@ spider = WWW::Spider.crawl_only("capken")
 
 extractors = {}
 [ 
+  Rule::Smzdm.new, 
   Rule::Haitao.new, 
   Rule::Mgpyh.new,
   Rule::Taozhe.new
@@ -17,7 +18,7 @@ end
 
 STDIN.each do |line|
   begin
-    url = WWW::Url.new line.strip
+    url = WWW::URL.new line.strip
 
     spider.crawl(url) do |page|
       res = [:url, :code, :content_type, :origin].map do |method|

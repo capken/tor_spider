@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 
 module Rule
-  class SmzdmExtractor < Refine::HTMLExtractor
-    domain "haitao.smzdm.com"
+  class Smzdm < Refine::HTMLExtractor
+    domain "smzdm.com"
 
     page_path :details_page, /youhui\/\d+$/i
 
